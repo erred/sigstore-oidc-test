@@ -6,16 +6,61 @@ jobs:
       - image: golang:alpine
     environment:
       COSIGN_EXPERIMENTAL: "1"
-      KO_DOCKER_REPO: "foo.bar"
+      KO_DOCKER_REPO: "us-central1-docker.pkg.dev/com-seankhliao/build"
+      GOOGLE_PROJECT: "330311169810"
+      SERVICE_ACCOUNT_EMAIL: "sigstore-oidc-test-circleci@com-seankhliao.iam.gserviceaccount.com"
     steps:
       - checkout
       - run:
-          name: build
+          name: wi ex
           command: |
+            apk add curl jq
+
+            STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1/token \
+              -H 'Content-Type: text/json; charset=utf-8' \
+              -d @- <<EOF | jq -r .access_token
+              {
+                  "audience"           : "//iam.googleapis.com/projects/${GOOGLE_PROJECT}/locations/global/workloadIdentityPools/sigstore-oidc-test/providers/circleci",
+                  "grantType"          : "urn:ietf:params:oauth:grant-type:token-exchange",
+                  "requestedTokenType" : "urn:ietf:params:oauth:token-type:access_token",
+                  "scope"              : "https://www.googleapis.com/auth/cloud-platform",
+                  "subjectTokenType"   : "urn:ietf:params:oauth:token-type:id_token",
+                  "subjectToken"       : "${CIRCLE_OIDC_TOKEN}"
+              }
+            EOF
+            )
+
+            IDENTITY_TOKEN=$(curl -0 -X POST \
+              https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateIdToken \
+              -H "Content-Type: text/json; charset=utf-8" \
+              -H "Authorization: Bearer $STS_TOKEN" \
+              -d @- <<EOF | jq -r .token
+              {
+                "audience": "sigstore",
+                "includeEmail": true
+              }
+            EOF
+            )
+
+            ACCESS_TOKEN=$(curl -0 -X POST \
+              https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateAccessToken \
+              -H "Content-Type: text/json; charset=utf-8" \
+              -H "Authorization: Bearer $STS_TOKEN" \
+              -d @- <<EOF | jq -r .accessToken
+              {
+                "scope": [ "https://www.googleapis.com/auth/cloud-platform" ]
+              }
+            EOF
+            )
+
             go install github.com/google/ko@latest
             go install github.com/sigstore/cosign/cmd/cosign@latest
+
+            ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
             ko build --image-refs image.txt --tarball out.img --push=false
-            cosign sign-blob --identity-token "${CIRCLE_OIDC_TOKEN}" --output-signature out.sig out.img
+
+            cosign sign-blob --identity-token "${IDENTITY_TOKEN}" --output-signature out.sig out.img
+
             echo "=== image ==="
             cat image.txt
             echo "=== sig ==="
