@@ -18,7 +18,7 @@ jobs:
 
             STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1/token \
               -H 'Content-Type: text/json; charset=utf-8' \
-              -d @- <<EOF | jq -r .access_token
+              -d @- << EOF | jq -r .access_token
               {
                   "audience"           : "//iam.googleapis.com/projects/${GOOGLE_PROJECT}/locations/global/workloadIdentityPools/sigstore-oidc-test/providers/circleci",
                   "grantType"          : "urn:ietf:params:oauth:grant-type:token-exchange",
@@ -34,7 +34,7 @@ jobs:
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateIdToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
-              -d @- <<EOF | jq -r .token
+              -d @- << EOF | jq -r .token
               {
                 "audience": "sigstore",
                 "includeEmail": true
@@ -46,7 +46,7 @@ jobs:
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateAccessToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
-              -d @- <<EOF | jq -r .accessToken
+              -d @- << EOF | jq -r .accessToken
               {
                 "scope": [ "https://www.googleapis.com/auth/cloud-platform" ]
               }
