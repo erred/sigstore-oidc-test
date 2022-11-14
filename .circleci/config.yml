@@ -8,6 +8,7 @@ jobs:
       COSIGN_EXPERIMENTAL: "1"
       KO_DOCKER_REPO: "ko.local"
     steps:
+      - checkout
       - run:
           name: build
           command: |
