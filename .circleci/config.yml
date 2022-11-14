@@ -51,7 +51,7 @@ jobs:
             curl -0 -s \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateAccessToken \
               -H "Content-Type: text/json; charset=utf-8" \
-              -H "Authorization: Bearer $STS_TOKEN" \
+              -H "Authorization: Bearer $IDENTITY_TOKEN" \
               -d @- | \
             jq -r .accessToken)
 
