@@ -1,0 +1,28 @@
+version: 2.1
+
+jobs:
+  all:
+    docker:
+      - image: golang:alpine
+    environment:
+      COSIGN_EXPERIMENTAL: "1"
+      KO_DOCKER_REPO: "ko.local"
+    steps:
+      - run:
+          name: build
+          command: |
+            go install github.com/google/ko@latest
+            go install github.com/sigstore/cosign/cmd/cosign@latest
+            ko build --image-refs image.txt --tarball out.img --push=false
+            cosign sign-blog --identity-token "${CIRCLE_OIDC_TOKEN}" --output-signature out.sig
+            echo "=== image ==="
+            cat image.txt
+            echo "=== sig ==="
+            cat out.sig
+
+workflows:
+  main:
+    jobs:
+      - all:
+          context:
+            - empty-context
