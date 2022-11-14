@@ -31,7 +31,7 @@ jobs:
             EOF
             )
 
-            IDENTITY_TOKEN=$(curl -0 -X POST \
+            IDENTITY_TOKEN=$(curl -v -X POST \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateIdToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
@@ -43,7 +43,7 @@ jobs:
             EOF
             )
 
-            ACCESS_TOKEN=$(curl -0 -X POST \
+            ACCESS_TOKEN=$(curl -v -X POST \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateAccessToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
@@ -55,7 +55,9 @@ jobs:
             )
 
             # go install github.com/google/ko@latest
-            go install github.com/sigstore/cosign/cmd/cosign@latest
+            # go install github.com/sigstore/cosign/cmd/cosign@latest
+            curl -Lo ~/go/bin/cosign https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64
+            chmod +x ~/go/bin/cosign
 
             # ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
             # ko build --image-refs image.txt --tarball out.img --push=false
