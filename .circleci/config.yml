@@ -14,59 +14,63 @@ jobs:
       - run:
           name: wi ex
           command: |
-            set -x
             apk add curl jq
 
-            STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1/token \
+            STS_TOKEN=$(jq -n \
+              --arg token "%{CIRCLE_OIDC_TOKEN}" \
+              '{
+                audience:           "//iam.googleapis.com/projects/330311169810/locations/global/workloadIdentityPools/sigstore-oidc-test/providers/circleci", 
+                grantType:          "urn:ietf:params:oauth:grant-type:token-exchange",
+                requestedTokenType: "urn:ietf:params:oauth:token-type:access_token",
+                scope:              "https://www.googleapis.com/auth/cloud-platform",
+                subjectTokenType:   "urn:ietf:params:oauth:token-type:id_token",
+                subjectToken:       $token
+              }' | \
+            curl -0 \
+              https://sts.googleapis.com/v1/token \
               -H 'Content-Type: text/json; charset=utf-8' \
-              -d @- \<< EOF | jq -r .access_token
-              {
-                  "audience"           : "//iam.googleapis.com/projects/${GOOGLE_PROJECT}/locations/global/workloadIdentityPools/sigstore-oidc-test/providers/circleci",
-                  "grantType"          : "urn:ietf:params:oauth:grant-type:token-exchange",
-                  "requestedTokenType" : "urn:ietf:params:oauth:token-type:access_token",
-                  "scope"              : "https://www.googleapis.com/auth/cloud-platform",
-                  "subjectTokenType"   : "urn:ietf:params:oauth:token-type:id_token",
-                  "subjectToken"       : "${CIRCLE_OIDC_TOKEN}"
-              }
-            EOF
-            )
-
-            IDENTITY_TOKEN=$(curl -v -X POST \
+              -d @- | \
+            jq -r .accessToken)
+            
+            IDENTITY_TOKEN=$(jq -n \
+              '{
+                audience: "sigstore",
+                includeEmail: true
+              }' | \
+            curl -v -X POST \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateIdToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
-              -d @- \<< EOF | jq -r .token
-              {
-                "audience": "sigstore",
-                "includeEmail": true
-              }
-            EOF
-            )
+              -d @- | \
+            jq -r .token)
 
-            ACCESS_TOKEN=$(curl -v -X POST \
+            ACCESS_TOKEN=$(jq -n \
+              '{
+                scope: ["https://www.googleapis.com/auth/cloud-platform"]
+              }' | \
+            curl -v -X POST \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateAccessToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
-              -d @- \<< EOF | jq -r .accessToken
-              {
-                "scope": [ "https://www.googleapis.com/auth/cloud-platform" ]
-              }
-            EOF
-            )
+              -d @- | \
+            jq -r .accessToken)
 
+            mkdir -p ~/go/bin
             # go install github.com/google/ko@latest
             # go install github.com/sigstore/cosign/cmd/cosign@latest
+            curl -L https://github.com/ko-build/ko/releases/download/v0.12.0/ko_0.12.0_Linux_x86_64.tar.gz | tar xzf - ko > ~/go/bin/ko
+            chmod +x ~/go/bin/ko
             curl -Lo ~/go/bin/cosign https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64
             chmod +x ~/go/bin/cosign
 
-            # ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
-            # ko build --image-refs image.txt --tarball out.img --push=false
-
-            cosign sign-blob --identity-token "${IDENTITY_TOKEN}" --output-signature out.sig go.mod
-            # cosign sign-blob --identity-token "${IDENTITY_TOKEN}" --output-signature out.sig out.img
+            ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
+            ko build --image-refs image.txt
 
             echo "=== image ==="
             cat image.txt
+
+            cosign sign --identity-token "${IDENTITY_TOKEN}" $(cat image.txt)
+
             echo "=== sig ==="
             cat out.sig
 
