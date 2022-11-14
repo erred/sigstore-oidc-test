@@ -14,6 +14,7 @@ jobs:
       - run:
           name: wi ex
           command: |
+            set -x
             apk add curl jq
 
             STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1/token \
@@ -53,13 +54,14 @@ jobs:
             EOF
             )
 
-            go install github.com/google/ko@latest
+            # go install github.com/google/ko@latest
             go install github.com/sigstore/cosign/cmd/cosign@latest
 
-            ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
-            ko build --image-refs image.txt --tarball out.img --push=false
+            # ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
+            # ko build --image-refs image.txt --tarball out.img --push=false
 
-            cosign sign-blob --identity-token "${IDENTITY_TOKEN}" --output-signature out.sig out.img
+            cosign sign-blob --identity-token "${IDENTITY_TOKEN}" --output-signature out.sig go.mod
+            # cosign sign-blob --identity-token "${IDENTITY_TOKEN}" --output-signature out.sig out.img
 
             echo "=== image ==="
             cat image.txt
