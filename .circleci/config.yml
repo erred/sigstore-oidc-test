@@ -64,7 +64,10 @@ jobs:
             chmod +x /go/bin/cosign
 
             ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
-            ko build --image-refs image.txt
+
+            set +x
+
+            ko build --image-refs image.txt .
 
             echo "=== image ==="
             cat image.txt
