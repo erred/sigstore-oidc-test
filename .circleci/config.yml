@@ -15,7 +15,7 @@ jobs:
             go install github.com/google/ko@latest
             go install github.com/sigstore/cosign/cmd/cosign@latest
             ko build --image-refs image.txt --tarball out.img --push=false
-            cosign sign-blob --identity-token "${CIRCLE_OIDC_TOKEN}" --output-signature out.sig
+            cosign sign-blob --identity-token "${CIRCLE_OIDC_TOKEN}" --output-signature out.sig out.img
             echo "=== image ==="
             cat image.txt
             echo "=== sig ==="
