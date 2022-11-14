@@ -6,7 +6,7 @@ jobs:
       - image: golang:alpine
     environment:
       COSIGN_EXPERIMENTAL: "1"
-      KO_DOCKER_REPO: "ko.local"
+      KO_DOCKER_REPO: "foo.bar"
     steps:
       - checkout
       - run:
