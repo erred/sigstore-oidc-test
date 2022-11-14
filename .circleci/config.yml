@@ -37,7 +37,7 @@ jobs:
                 audience: "sigstore",
                 includeEmail: true
               }' | \
-            curl -v -X POST \
+            curl -0 -X POST \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateIdToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
@@ -48,7 +48,7 @@ jobs:
               '{
                 scope: ["https://www.googleapis.com/auth/cloud-platform"]
               }' | \
-            curl -v -X POST \
+            curl -0 -X POST \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateAccessToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
@@ -58,10 +58,10 @@ jobs:
             mkdir -p ~/go/bin
             # go install github.com/google/ko@latest
             # go install github.com/sigstore/cosign/cmd/cosign@latest
-            curl -L https://github.com/ko-build/ko/releases/download/v0.12.0/ko_0.12.0_Linux_x86_64.tar.gz | tar xzf - ko > ~/go/bin/ko
-            chmod +x ~/go/bin/ko
-            curl -Lo ~/go/bin/cosign https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64
-            chmod +x ~/go/bin/cosign
+            curl -L https://github.com/ko-build/ko/releases/download/v0.12.0/ko_0.12.0_Linux_x86_64.tar.gz | tar xzf - ko > /go/bin/ko
+            chmod +x /go/bin/ko
+            curl -Lo /go/bin/cosign https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64
+            chmod +x /go/bin/cosign
 
             ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
             ko build --image-refs image.txt
