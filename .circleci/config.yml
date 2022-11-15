@@ -27,11 +27,11 @@ jobs:
                 subjectTokenType:   "urn:ietf:params:oauth:token-type:id_token",
                 subjectToken:       $token
               }' | \
-            curl -0 --fail -v \
+            curl -0 --fail -s \
               https://sts.googleapis.com/v1/token \
               -H 'Content-Type: text/json; charset=utf-8' \
               -d @- | \
-            jq -r .accessToken)
+            jq -r .access_token)
             
             IDENTITY_TOKEN=$(jq -n \
               '{
