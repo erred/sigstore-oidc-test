@@ -7,7 +7,6 @@ jobs:
     environment:
       COSIGN_EXPERIMENTAL: "1"
       KO_DOCKER_REPO: "us-central1-docker.pkg.dev/com-seankhliao/build"
-      GOOGLE_PROJECT: "330311169810"
       SERVICE_ACCOUNT_EMAIL: "sigstore-oidc-test-circleci@com-seankhliao.iam.gserviceaccount.com"
     steps:
       - checkout
@@ -15,6 +14,8 @@ jobs:
           name: wi ex
           command: |
             apk add curl jq
+
+            set -ex
 
             STS_TOKEN=$(jq -n \
               --arg token "%{CIRCLE_OIDC_TOKEN}" \
@@ -26,7 +27,7 @@ jobs:
                 subjectTokenType:   "urn:ietf:params:oauth:token-type:id_token",
                 subjectToken:       $token
               }' | \
-            curl -0 -s \
+            curl -0 --fail -s \
               https://sts.googleapis.com/v1/token \
               -H 'Content-Type: text/json; charset=utf-8' \
               -d @- | \
@@ -37,7 +38,7 @@ jobs:
                 audience: "sigstore",
                 includeEmail: true
               }' | \
-            curl -0 -s \
+            curl -0 --fail -s \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateIdToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
@@ -48,7 +49,7 @@ jobs:
               '{
                 scope: ["https://www.googleapis.com/auth/cloud-platform"]
               }' | \
-            curl -0 -s \
+            curl -0 --fail -s \
               https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${SERVICE_ACCOUNT_EMAIL}:generateAccessToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer $STS_TOKEN" \
@@ -62,8 +63,6 @@ jobs:
             mv ko /go/bin/
             curl -sLo /go/bin/cosign https://github.com/sigstore/cosign/releases/download/v1.13.1/cosign-linux-amd64
             chmod +x /go/bin/*
-
-            set -ex
 
             ko login us-central1-docker.pkg.dev --username oauth2accesstoken --password "${ACCESS_TOKEN}"
             ko build --image-refs image.txt .
