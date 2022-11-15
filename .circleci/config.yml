@@ -18,7 +18,7 @@ jobs:
             set -ex
 
             STS_TOKEN=$(jq -n \
-              --arg token "%{CIRCLE_OIDC_TOKEN}" \
+              --arg token "${CIRCLE_OIDC_TOKEN}" \
               '{
                 audience:           "//iam.googleapis.com/projects/330311169810/locations/global/workloadIdentityPools/sigstore-oidc-test/providers/circleci", 
                 grantType:          "urn:ietf:params:oauth:grant-type:token-exchange",
